@@ -1,20 +1,43 @@
-from transformers import pipeline
-from sumy.parsers.plaintext import PlaintextParser
-from sumy.nlp.tokenizers import Tokenizer
-from sumy.summarizers.lsa import LsaSummarizer
+from transformers import BartForConditionalGeneration, BartTokenizer
 
-abstractive_summarizer = pipeline(
-    "summarization",
-    model="facebook/bart-large-cnn",
-    framework="pt"
-)
+class Summarizer:
+    def __init__(self):
+        self.model_name = "facebook/bart-large-cnn"
+        self.tokenizer = BartTokenizer.from_pretrained(self.model_name)
+        self.model = BartForConditionalGeneration.from_pretrained(self.model_name)
+        self.max_input_tokens = 1024  # BART limit
 
-def abstractive_summary(text, max_len=130, min_len=30):
-    result = abstractive_summarizer(text, max_length=max_len, min_length=min_len, do_sample=False)
-    return result[0]['summary_text']
+    def chunk_text(self, text):
+        sentences = text.split('. ')
+        chunks = []
+        current_chunk = ""
+        for sentence in sentences:
+            token_len = len(self.tokenizer.encode(current_chunk + sentence, truncation=False))
+            if token_len <= self.max_input_tokens:
+                current_chunk += sentence + ". "
+            else:
+                if current_chunk:
+                    chunks.append(current_chunk.strip())
+                current_chunk = sentence + ". "
+        if current_chunk:
+            chunks.append(current_chunk.strip())
+        return chunks
 
-def extractive_summary(text, num_sentences=3):
-    parser = PlaintextParser.from_string(text, Tokenizer("english"))
-    summarizer = LsaSummarizer()
-    summary = summarizer(parser.document, num_sentences)
-    return " ".join([str(sentence) for sentence in summary])
+    def summarize_text(self, text, max_length=150, min_length=50):
+        chunks = self.chunk_text(text)
+        summaries = []
+        for chunk in chunks:
+            inputs = self.tokenizer([chunk], max_length=self.max_input_tokens, return_tensors='pt', truncation=True)
+            summary_ids = self.model.generate(
+                inputs['input_ids'], 
+                num_beams=4, 
+                max_length=max_length, 
+                min_length=min_length, 
+                early_stopping=True
+            )
+            summaries.append(self.tokenizer.decode(summary_ids[0], skip_special_tokens=True))
+        final_summary = " ".join(summaries)
+        return final_summary
+
+    def summarize_batch(self, texts: list, max_length=150, min_length=50):
+        return [self.summarize_text(t, max_length, min_length) for t in texts]
