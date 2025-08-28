@@ -12,7 +12,7 @@ Input: Large text (e.g., article, research paper)  provided in input folder 1 re
 
 Output: Concise summary (3-5 sentences)  
 
-Pretrained model used : facebook/bart-large-cnn
+Pretrained model used : facebook/bart-large-cnn  (1.6GB)
 
 Users can interact with the backend via a **frontend interface** or directly through **API endpoints** using Swagger UI, Postman, or other API clients.
 
@@ -67,7 +67,7 @@ pip install -r requirements.txt
 **Key Dependencies:**
 - `fastapi` – backend framework  
 - `uvicorn` – ASGI server  
-- `transformers` & `torch` – for abstractive summarization  
+- `transformers` & `torch` – for abstractive summarization  (619 mb)
 - `sumy` – for extractive summarization  
 - `pdfplumber` – PDF text extraction  
 - `rouge` – summary evaluation  
