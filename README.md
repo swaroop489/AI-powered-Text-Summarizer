@@ -1,22 +1,20 @@
 # AI-powered-Text-Summarizer
 
-## Project Overview  [FastAPI for backend and React JS For Frontend ] 
+## Project Overview  [FastAPI Backend & ReactJS Frontend]
 
+### Problem Statement
 
-### Follows Problem Statement provided 
+- **Input:** Large text files (e.g., articles, research papers) provided in the `/input` folder. Example: 1 research paper + `sample.txt`.  
+- **Output:** Concise summaries (3–5 sentences).  
 
-Input: Large text (e.g., article, research paper)  provided in input folder 1 research paper + sample.txt in /input folder 
+> **Note:**  
+> - Copy all input files into local storage before running the project.  
+> - Clear the contents of `/input` and `/output` folders for demonstration purposes.  
+> - After execution, output files will be saved in the `/output` folder in the backend.
 
-- #### Make Sure to copy all input files in local storage and delete contents of input and output folder for demonstration the code will produce input as well as output in respective folders
-- #### output of executed code is found in /output folder in backend
-
-Output: Concise summary (3-5 sentences)  
-
-Pretrained model used : facebook/bart-large-cnn  (1.6GB)
-
-Users can interact with the backend via a **frontend interface** or directly through **API endpoints** using Swagger UI, Postman, or other API clients.
-
-Evaluation metrics Rouge scores
+- **Pretrained Model:** `facebook/bart-large-cnn` (1.6GB).  
+- **User Interaction:** Through the **frontend interface** or directly via **API endpoints** using Swagger UI, Postman, or other API clients.  
+- **Evaluation Metric:** ROUGE scores.
 
 ---
 ## 🚀 Features  
@@ -80,14 +78,18 @@ uvicorn app:app --reload
 - Access **Swagger UI** at `http://127.0.0.1:8000/docs` for API testing.
 
 
-### 2.6 IF Using Backend Only 
+### 2.6 Using Backend Only
 
-- Go to `http://127.0.0.1:8000/docs`
-- For single file demonstration summary
-   - Path: **/api/files/extract** -> try out -> upload sample.txt and then click execute
-   - for output go to Path: **/api/summaries** and enter file name sample.txt and execute and you will get json output
-- For multi files
-   - Path: **/api/files/summarize** add multiple files and check merge option true or false depending upon if you want merged summary or not then click execute
+- Open Swagger UI at `http://127.0.0.1:8000/docs`.
+
+- **Single File Demonstration:**
+   1. Go to **/api/files/extract** → Click **Try it out** → Upload `sample.txt` → Click **Execute**.  
+   2. To get the summary, go to **/api/summaries** → Enter the file name `sample.txt` → Click **Execute** → JSON output will be displayed.
+
+- **Multiple Files:**
+   1. Go to **/api/files/summarize** → Click **Try it out** → Upload multiple files.  
+   2. Set the **Merge** option to `true` or `false` depending on whether you want a merged summary.  
+   3. Click **Execute** → Summaries and ROUGE scores will be returned.
 
 ---
 
@@ -136,18 +138,50 @@ frontend/
 
 ## 5. API Routes
 
-1. **Root Route**: `/` – Health check  
-2. **Single File/Text Extraction**: `/api/files/extract` – Upload a single file or submit text  
-   - Specifically for **single file/text input**  
-   - Can be used directly via Swagger UI or Postman  
-3. **Multiple File Summarization**: `/api/files/summarize` – Upload multiple files, optionally merge summaries  
-   - Returns summaries and ROUGE scores for each file or the merged document  
-4. **Summarize by Text or Existing File**: `/api/summaries` – Summarize text or previously uploaded files  
-   - Returns both abstractive and extractive summaries with ROUGE scores  
+1. **Root Route**: `/` – Health check.
+
+2. **Single File/Text Extraction**: `/api/files/extract` – Upload a single file or provide text.  
+   - Specifically designed for **single file or text input**.  
+   - Can be accessed directly via **Swagger UI** or **Postman**.
+
+3. **Multiple File Summarization**: `/api/files/summarize` – Upload multiple files and optionally merge summaries.  
+   - Returns summaries and **ROUGE scores** for each file or the merged document.
+
+4. **Summarize by Text or Existing File**: `/api/summaries` – Summarize text or previously uploaded files.  
+   - Provides both **abstractive** and **extractive summaries** along with **ROUGE scores**.
 
 > All routes can be used independently of the frontend.
 
+
 ---
+
+## Explanation of Separate Routes
+
+In this project, I created **separate FastAPI routes** for file/text extraction and summarization to keep the API **modular, maintainable, and flexible**. Here’s the reasoning:
+
+### `/api/files/extract` – File/Text Extraction
+- Handles **raw text input** or **single file upload** (PDF/TXT).  
+- Responsible for **extracting textual content** from files or using provided text.  
+- Returns a **standardized JSON structure** (`files: [{name, text}]`) so other endpoints can consume it easily.  
+- Separating extraction allows **pre-processing files independently** without triggering summarization.
+
+### `/api/files/summarize` – Multiple Files Summarization
+- Handles **batch uploads** of multiple files.  
+- Optionally **merges all files** into a single summary.  
+- Calls the **summarization logic after extraction**.  
+- Keeping this separate makes it easier to **reuse the extraction logic** for multiple files and handle merging.
+
+### `/api/summaries` – Single Text or File Summarization
+- Summarizes **already extracted text** or a single uploaded file.  
+- Allows users to **directly summarize text without uploading files**, supporting both file-based and text-based workflows.  
+- Provides **abstractive and extractive summaries** along with **ROUGE scores**.
+
+### Benefits of This Separation
+- **Modularity:** Each route has a single responsibility (extract vs summarize).  
+- **Reusability:** Extraction logic can be used independently by other endpoints or clients.  
+- **Scalability:** Easier to extend (e.g., add new summarization models or handle more file types).  
+- **Swagger clarity:** Each endpoint has a clear purpose and schema, making the API easier to document and consume.
+
 
 ## 6. Usage
 
