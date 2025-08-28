@@ -38,6 +38,3 @@ class Summarizer:
             summaries.append(self.tokenizer.decode(summary_ids[0], skip_special_tokens=True))
         final_summary = " ".join(summaries)
         return final_summary
-
-    def summarize_batch(self, texts: list, max_length=150, min_length=50):
-        return [self.summarize_text(t, max_length, min_length) for t in texts]
