@@ -1,0 +1,22 @@
+Abstractive Summary:
+- Artificial Intelligence (AI) refers to the simulation of human intelligence in machines that are programmed to think and act like humans.
+- The history of AI dates back to the mid-20th century, when pioneers such as Alan Turing and John McCarthy laid the foundations of this field.
+- With the growth of computational power and the availability of massive datasets, AI has achieved remarkable success in various domains.
+
+Extractive Summary:
+- Over the decades, AI has evolved tremendously, from rule-based expert systems in the 1970s and 1980s to modern machine learning and deep learning techniques.
+- Natural Language Processing (NLP) is a subfield of AI that focuses on the interaction between computers and human language.
+- Some common NLP applications include sentiment analysis, language translation, text summarization, and chatbots.
+- Computer Vision is another crucial area of AI that deals with enabling machines to interpret and process visual information from the world.
+- AI has also influenced transportation, with autonomous vehicles becoming a reality due to advances in perception, planning, and control systems.
+
+ROUGE Scores:
+Abstractive:
+- ROUGE-1: 0.207
+- ROUGE-2: 0.16
+- ROUGE-L: 0.207
+
+Extractive:
+- ROUGE-1: 0.287
+- ROUGE-2: 0.226
+- ROUGE-L: 0.287

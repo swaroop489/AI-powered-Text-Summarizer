@@ -1,0 +1,24 @@
+Abstractive Summary:
+- This document is reserved for people enrolled into the Certified AI Practitioner course by Stephane Maarek.
+- Please do not share this document, it is intended for personal use and exam preparation only.
+- If you’ve obtained these slides for free on a website that is not the course’s website, please reach out to piracy@datacumulus.com.
+- This course is intended for IT professionals who want to learn about AI.
+- It is also intended to help you pass a technical certification administered by AWS.
+
+Extractive Summary:
+- © Stephane Maarek www.datacumulus.com Table of Contents • Introduction to Artificial Intelligence (AI) • Introduction to AWS and Cloud Computing • Amazon Bedrock and GenAI • Prompt Engineering • Amazon Q • AI and Machine Learning (ML) • AWS Managed AI Services • Amazon SageMaker • Responsible AI, Security, Compliance and Governance • AWS Security Services & More © Stephane Maarek
+- © Stephane Maarek www.datacumulus.com AWS & Cloud Computing © Stephane Maarek
+- © Stephane Maarek www.datacumulus.com Generative AI with Amazon Bedrock © Stephane Maarek
+- Naïve Prompt: Summarize what is AWS • Prompt gives little guidance and leaves a lot to the model’s interpretation • Prompt Engineering = developing, designing, and optimizing prompts to enhance the output of FMs for your needs • Improved Prompting technique consists of: • Instructions – a task for the model to do (description, how the model should perform) • Context – external information to guide the model • Input data – the input for which you want a response • Output Indicator – the output type or format © Stephane Maarek
+- • AWS AI Services are pre-trained ML services for your use case SageMaker Amazon Amazon Q Amazon Q • Responsiveness and Availability JumpStart Bedrock Business Developer • Redundancy and Regional Coverage: Text and Documents Vision Search deployed across multiple Availability Zones and AWS regions Amazon Amazon Amazon Amazon Amazon • Performance: specialized CPU and GPUs Comprehend Translate Textract Rekognition Kendra for specific use-cases for cost saving Chatbots Speech Recommendations • Token-based pricing: pay for what you use • Provisioned throughput: for predictable Amazon Amazon Amazon Amazon workloads, cost savings and predictable Lex Polly Transcribe Personalize performance Amazon SageMaker © Stephane Maarek
+
+ROUGE Scores:
+Abstractive:
+- ROUGE-1: 0.02
+- ROUGE-2: 0.008
+- ROUGE-L: 0.02
+
+Extractive:
+- ROUGE-1: 0.047
+- ROUGE-2: 0.025
+- ROUGE-L: 0.047

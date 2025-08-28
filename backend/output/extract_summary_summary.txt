@@ -1,0 +1,23 @@
+Abstractive Summary:
+- Ronan Deazley defines the contours of the public domain as a series of categories.
+- These include works which do not qualify for copyright protection.
+- Also those works where permission to use has been granted by the copyright owner a priori.
+- And parts of works which fall on the unprotectable side of the idea-expression line.
+
+Extractive Summary:
+- Ronan Deazley defines the contours of the public domain as a series of categories incorporating:10 (i) those works which do not qualify for copyright protection; (ii) those works which do but are out of copyright term; (iii) those works where permission to use has been granted by the copyright owner a priori; and (iv) such parts of works which fall on the unprotectable side of the idea-expression line, which are allowed for within the statutory framework (taking of an insubstantial part, the permitted acts), or which are permissible as a result of judicial intervention with the regime at common law (on public policy grounds, or as being in the public interest).11 These interrelated defini- tions are expanded further, with reference to legal decisions concerning actual use where the legal boundary of copyright protection was uncertain.
+- Furthermore, more recent material can be in the public domain due to being outside of the scope of copyright law, if it does not satisfy the necessary requirements to attract copyright, such as that it is not an expression, or does not meet the threshold of originality required for protection.
+- The defendant further argued that similarities with the book Harry Potter and the Philosopher’s Stone cannot be considered an imitation as these are also elements that Dmitri Yemets, like Rowling, took from the public domain.46 The District Court held, granting the application, that having regard to the high degree of similarity between the two stories, Yemet’s book was an adaptation of Rowling’s book that cannot be considered to be a new and orig- inal work for the purposes of Article 13 of the Dutch Copyright Act 1912 (as amended): It must be assumed in these proceedings that a storyline (a worked-out plot) can have an adequate character of its own to be considered a work for the purposes of the Copyright Act.
+- Byblos’ argument that Rowling has used elements from the public domain in her book Harry Potter and the Philosopher’s Stone does not in principle affect the possibility that the Rowling’s book (in which the storyline is developed) is a work for the purposes of the Copyright Act.47 On the point of parody, the Court held that ‘by and large, a ridiculous (ironic) imitation of a work can be considered as a parody, where that work becomes the subject of laughter and when the contrast with the original work domi- nates’.48 The aim should be humour and not competition.
+- For example, in Kelly v Cinema Houses Ltd,70 it was held that there was no copyright protection in the UK for literary characters.
+
+ROUGE Scores:
+Abstractive:
+- ROUGE-1: 0.276
+- ROUGE-2: 0.196
+- ROUGE-L: 0.276
+
+Extractive:
+- ROUGE-1: 0.998
+- ROUGE-2: 0.983
+- ROUGE-L: 0.998

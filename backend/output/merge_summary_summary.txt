@@ -1,18 +1,24 @@
-- Kris Erickson, Martin Kretschmer and Dinusha Mendis.
-- ‘An empirical approach to the public domain’ ‘Creative practices in the digital era and access to the reservoir of works and ideas that we call ‘the public Domain’ are intertwined in complex ways.
-- This chapter outlines and explains the methodological approach adopted in defining the ‘public domain’ The size and shape of the public domain shifts depending on the territory of the creator as well as the territory in which one seeks to exploit a derivative work.
-- This chapter, based on a larger project exploring copyright and the valueof the public Domain, seeks to address the call by Dobusch to empirically address the value of thepublic domain in relation to actual use.
-- The nonrival, nonexcludable nature of the public domain would seem to limit its appeal to creators in a competitive market.
+Abstractive Summary:
+- The size and shape of the public domain shifts depending on the territory of the creator as well as the territory in which one seeks to exploit a derivative work.
+- UK copyright in previously unpub-lished work does not presently expire until 1 January 2039.
+- Once the term has passed, works become freely available for use.
+- Public domain availability makes a significant difference to inclusion of images on Wikipedia.
+- Pages with public domain images attracted between 17 and 19 per cent more visitors than pages where no image was available.
 
-
-
-
-
-
-
-
+Extractive Summary:
+- The perceived risk of a legal challenge may dissuade creators from making use of ideas and works in the public domain.
 - Ronan Deazley defines the contours of the public domain as a series of categories incorporating:10 (i) those works which do not qualify for copyright protection; (ii) those works which do but are out of copyright term; (iii) those works where permission to use has been granted by the copyright owner a priori; and (iv) such parts of works which fall on the unprotectable side of the idea-expression line, which are allowed for within the statutory framework (taking of an insubstantial part, the permitted acts), or which are permissible as a result of judicial intervention with the regime at common law (on public policy grounds, or as being in the public interest).11 These interrelated defini- tions are expanded further, with reference to legal decisions concerning actual use where the legal boundary of copyright protection was uncertain.
 - Furthermore, more recent material can be in the public domain due to being outside of the scope of copyright law, if it does not satisfy the necessary requirements to attract copyright, such as that it is not an expression, or does not meet the threshold of originality required for protection.
 - The defendant further argued that similarities with the book Harry Potter and the Philosopher’s Stone cannot be considered an imitation as these are also elements that Dmitri Yemets, like Rowling, took from the public domain.46 The District Court held, granting the application, that having regard to the high degree of similarity between the two stories, Yemet’s book was an adaptation of Rowling’s book that cannot be considered to be a new and orig- inal work for the purposes of Article 13 of the Dutch Copyright Act 1912 (as amended): It must be assumed in these proceedings that a storyline (a worked-out plot) can have an adequate character of its own to be considered a work for the purposes of the Copyright Act.
 - Byblos’ argument that Rowling has used elements from the public domain in her book Harry Potter and the Philosopher’s Stone does not in principle affect the possibility that the Rowling’s book (in which the storyline is developed) is a work for the purposes of the Copyright Act.47 On the point of parody, the Court held that ‘by and large, a ridiculous (ironic) imitation of a work can be considered as a parody, where that work becomes the subject of laughter and when the contrast with the original work domi- nates’.48 The aim should be humour and not competition.
-- For example, in Kelly v Cinema Houses Ltd,70 it was held that there was no copyright protection in the UK for literary characters.
+
+ROUGE Scores:
+Abstractive:
+- ROUGE-1: 0.185
+- ROUGE-2: 0.119
+- ROUGE-L: 0.185
+
+Extractive:
+- ROUGE-1: 0.487
+- ROUGE-2: 0.449
+- ROUGE-L: 0.487

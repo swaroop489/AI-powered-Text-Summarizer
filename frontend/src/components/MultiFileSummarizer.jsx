@@ -2,49 +2,20 @@ import { useState } from "react";
 
 function MultiFileSummarizer() {
   const [files, setFiles] = useState([]);
-  const [fileTexts, setFileTexts] = useState([]);
   const [mergeFiles, setMergeFiles] = useState(false);
   const [summaries, setSummaries] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Handle multiple file upload
-  const handleMultiUpload = async (e) => {
-    const uploadedFiles = Array.from(e.target.files).slice(0, 5); // max 5 files
+  const handleMultiUpload = (e) => {
+    const uploadedFiles = Array.from(e.target.files).slice(0, 5); 
     setFiles(uploadedFiles);
     setError("");
-    setFileTexts([]);
     setSummaries([]);
-
-    const texts = [];
-    for (const file of uploadedFiles) {
-      if (!["text/plain", "application/pdf"].includes(file.type)) {
-        setError("Only .txt and .pdf files are supported");
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append("files", file);
-
-      try {
-        const res = await fetch("http://127.0.0.1:8000/upload_files", {
-          method: "POST",
-          body: formData,
-        });
-        const data = await res.json();
-        if (data.files && data.files.length > 0) {
-          texts.push({ name: file.name, text: data.files[0].text });
-        }
-      } catch (err) {
-        setError("Failed to extract some files");
-      }
-    }
-    setFileTexts(texts);
   };
 
-  // Summarize files
   const handleSummarize = async () => {
-    if (!fileTexts.length) {
+    if (!files.length) {
       setError("Please upload files first.");
       return;
     }
@@ -54,32 +25,20 @@ function MultiFileSummarizer() {
     setSummaries([]);
 
     try {
-      let response;
-      if (mergeFiles) {
-        // Combine all files into one summary
-        const mergedText = fileTexts.map(f => f.text).join("\n");
-        response = await fetch("http://127.0.0.1:8000/summarize_with_type", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: mergedText }),
-        });
-        const data = await response.json();
-        setSummaries([{ name: "Merged Files", ...data }]);
-      } else {
-        // Individual summaries
-        response = await fetch("http://127.0.0.1:8000/summarize_batch", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ texts: fileTexts.map(f => f.text) }),
-        });
-        const data = await response.json();
-        // Correctly map backend results
-        const mapped = data.results.map((s, i) => ({
-          name: fileTexts[i].name,
-          ...s
-        }));
-        setSummaries(mapped);
-      }
+      const formData = new FormData();
+      files.forEach(f => formData.append("files", f));
+      formData.append("merge", mergeFiles); 
+
+      const res = await fetch("http://127.0.0.1:8000/api/files/summarize", {
+        method: "POST",
+        body: formData
+      });
+
+      if (!res.ok) throw new Error("Failed to summarize files");
+
+      const data = await res.json();
+      setSummaries(data.results); 
+
     } catch (err) {
       console.error(err);
       setError("Failed to summarize files.");
@@ -94,7 +53,7 @@ function MultiFileSummarizer() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Left Column */}
-        <div className="bg-white p-4 rounded shadow-lg flex-shrink-0  space-y-4">
+        <div className="bg-white p-4 rounded shadow-lg flex-shrink-0 space-y-4">
           <h2 className="font-bold">Upload Files</h2>
           <input
             type="file"
@@ -102,10 +61,9 @@ function MultiFileSummarizer() {
             multiple
             onChange={handleMultiUpload}
             className="w-full"
-            disabled={files.length > 0} // disable after upload
+            disabled={loading}
           />
 
-          {/* Show Combine toggle only if more than 1 file */}
           {files.length > 1 && (
             <label className="flex items-center gap-2 mt-2">
               <input
@@ -113,7 +71,7 @@ function MultiFileSummarizer() {
                 checked={mergeFiles}
                 onChange={() => setMergeFiles(!mergeFiles)}
                 className="rounded-full"
-                disabled={files.length < 2} // disable after upload
+                disabled={loading || files.length < 1  }
               />
               <span className="text-sm">Combine Summary</span>
             </label>
@@ -131,7 +89,7 @@ function MultiFileSummarizer() {
 
         {/* Right Column: File Names */}
         <div className="space-y-4">
-          {fileTexts.map((f, idx) => (
+          {files.map((f, idx) => (
             <div key={idx} className="bg-white p-4 rounded shadow-lg">
               <h3 className="font-bold">{f.name}</h3>
             </div>
@@ -139,7 +97,6 @@ function MultiFileSummarizer() {
         </div>
       </div>
 
-      {/* Summaries: full width below both columns */}
       {summaries.length > 0 && (
         <div className="mt-6 space-y-4">
           {summaries.map((s, idx) => (
@@ -150,7 +107,7 @@ function MultiFileSummarizer() {
               <div className="space-y-2">
                 {s.abstractive
                   ? s.abstractive.split(/(?<=[.!?])\s+/).map((line, i) => (
-                      <p key={i} className="leading-relaxed">- {line}</p>
+                      <p key={i} className="leading-relaxed">{line}</p>
                     ))
                   : "Summary will appear here..."}
               </div>
@@ -164,16 +121,20 @@ function MultiFileSummarizer() {
                   : "Summary will appear here..."}
               </div>
 
-              {s.scores && (
-                <div className="mt-3">
-                  <h4 className="font-semibold">ROUGE Scores</h4>
-                  <ul className="list-disc list-inside">
-                    <li>ROUGE-1: {s.scores.rouge1}</li>
-                    <li>ROUGE-2: {s.scores.rouge2}</li>
-                    <li>ROUGE-L: {s.scores.rougeL}</li>
-                  </ul>
-                </div>
-              )}
+              { s.scores && (
+  <div className="mt-3">
+    <h4 className="font-semibold">ROUGE Scores</h4>
+    <ul className="list-disc list-inside">
+      <li>Abstractive - ROUGE-1: {s.scores.abstractive.rouge1}</li>
+      <li>Abstractive - ROUGE-2: {s.scores.abstractive.rouge2}</li>
+      <li>Abstractive - ROUGE-L: {s.scores.abstractive.rougeL}</li>
+      <li>Extractive - ROUGE-1: {s.scores.extractive.rouge1}</li>
+      <li>Extractive - ROUGE-2: {s.scores.extractive.rouge2}</li>
+      <li>Extractive - ROUGE-L: {s.scores.extractive.rougeL}</li>
+    </ul>
+  </div>
+)}
+
             </div>
           ))}
         </div>

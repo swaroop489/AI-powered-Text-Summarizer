@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sumy.parsers.plaintext import PlaintextParser
@@ -8,8 +8,9 @@ from rouge import Rouge
 import pdfplumber
 import os
 import re
-
 from summarizer import Summarizer
+from typing import Optional,List
+
 
 # ------------------- FastAPI setup -------------------
 app = FastAPI()
@@ -29,7 +30,7 @@ app.add_middleware(
 
 # ------------------- Models -------------------
 class TextRequest(BaseModel):
-    text: str
+    text: Optional[str] = None 
 
 class BatchRequest(BaseModel):
     texts: list
@@ -56,107 +57,197 @@ def extract_text_from_txt(file_path):
 def sanitize_filename(name):
     return re.sub(r"[^a-zA-Z0-9_\-\.]", "_", name)
 
-def save_summary_file(name_prefix, abs_summary, ext_summary, scores):
+def save_summary_file(name_prefix, abs_summary, ext_summary, scores=None):
     if not os.path.exists("output"):
         os.makedirs("output")
-    score_part = ""
-    if scores:
-        score_part = f"_R1-{scores['rouge1']}_R2-{scores['rouge2']}_RL-{scores['rougeL']}"
-    filename = f"{name_prefix}{score_part}_summary.txt"
+    
+    filename = f"{name_prefix}_summary.txt"
     path = os.path.join("output", filename)
+    
     with open(path, "w", encoding="utf-8") as f:
         f.write("Abstractive Summary:\n")
         f.write(abs_summary + "\n\n")
         f.write("Extractive Summary:\n")
         f.write(ext_summary + "\n\n")
+        
         if scores:
-            f.write(f"ROUGE Scores: {scores}\n")
+            f.write("ROUGE Scores:\n")
+            f.write("Abstractive:\n")
+            f.write(f"- ROUGE-1: {scores['abstractive']['rouge1']}\n")
+            f.write(f"- ROUGE-2: {scores['abstractive']['rouge2']}\n")
+            f.write(f"- ROUGE-L: {scores['abstractive']['rougeL']}\n\n")
+            
+            f.write("Extractive:\n")
+            f.write(f"- ROUGE-1: {scores['extractive']['rouge1']}\n")
+            f.write(f"- ROUGE-2: {scores['extractive']['rouge2']}\n")
+            f.write(f"- ROUGE-L: {scores['extractive']['rougeL']}\n")
+    
     return path
 
-# ------------------- Routes -------------------
-@app.get("/")
-def root():
-    return {"message": "FastAPI backend is running"}
 
-# ------------------- File Upload -------------------
-@app.post("/upload_files")
-async def upload_files(files: list[UploadFile] = File(...)):
-    result = []
-    for file in files:
-        temp_path = f"temp_{file.filename}"
-        with open(temp_path, "wb") as f:
-            f.write(await file.read())
-        
-        if file.content_type == "application/pdf":
-            ext_text = extract_text_from_pdf(temp_path)
-        elif file.content_type == "text/plain":
-            ext_text = extract_text_from_txt(temp_path)
-        else:
-            os.remove(temp_path)
-            raise HTTPException(status_code=400, detail=f"Unsupported file type: {file.filename}")
-        
-        os.remove(temp_path)
-        result.append({"name": file.filename, "text": ext_text})
-    return {"files": result}
-
-# ------------------- Single Text Summarization -------------------
-@app.post("/summarize_with_type")
-def summarize_with_type(req: TextRequest):
-    abs_summary1 = abstractive_summarizer.summarize_text(req.text)
+def summarize_text(text):
+    # Abstractive summary (limit to 5 sentences)
+    abs_summary1 = abstractive_summarizer.summarize_text(text)
     abs_sentences = re.split(r'(?<=[.!?])\s+', abs_summary1.strip())
-    abs_summary = "\n".join([f"- {s}" for s in abs_sentences])
-    parser = PlaintextParser.from_string(req.text, SumyTokenizer("english"))
+    abs_summary = "\n".join([f"- {s}" for s in abs_sentences[:5]])
+
+    # Extractive summary (5 sentences)
+    parser = PlaintextParser.from_string(text, SumyTokenizer("english"))
     ext_summary_sentences = extractive_summarizer(parser.document, 5)
     ext_summary = "\n".join([f"- {str(s)}" for s in ext_summary_sentences])
-    
+
+    # ROUGE scores against original text
     try:
-        scores = rouge_evaluator.get_scores(abs_summary, ext_summary)[0]
+        abs_scores = rouge_evaluator.get_scores(abs_summary, text)[0]
+        ext_scores = rouge_evaluator.get_scores(ext_summary, text)[0]
         scores_clean = {
-            "rouge1": round(scores["rouge-1"]["f"], 3),
-            "rouge2": round(scores["rouge-2"]["f"], 3),
-            "rougeL": round(scores["rouge-l"]["f"], 3),
+            "abstractive": {
+                "rouge1": round(abs_scores["rouge-1"]["f"], 3),
+                "rouge2": round(abs_scores["rouge-2"]["f"], 3),
+                "rougeL": round(abs_scores["rouge-l"]["f"], 3),
+            },
+            "extractive": {
+                "rouge1": round(ext_scores["rouge-1"]["f"], 3),
+                "rouge2": round(ext_scores["rouge-2"]["f"], 3),
+                "rougeL": round(ext_scores["rouge-l"]["f"], 3),
+            }
         }
     except:
         scores_clean = None
 
-    # Save combined summary to output folder
-    save_summary_file("multisummary", abs_summary, ext_summary, scores_clean)
+    return abs_summary, ext_summary, scores_clean
 
+
+
+
+# ------------------- Routes -------------------
+
+
+
+@app.get("/")
+def root():
+    return {"message": "FastAPI backend is running"}
+
+
+
+# ------------------- Upload Files/Text And Extract Text -------------------
+
+@app.post(
+    "/api/files/extract",
+    summary="Upload File Or Text",
+    description="This endpoint allows uploading a single PDF/TXT file or providing raw text for extraction."
+)
+async def upload_file_or_text(
+    file: Optional[UploadFile] = File(None, description="Upload a single file (PDF/TXT)"),
+    text: Optional[str] = Form(None, description="Provide raw text instead of file")
+):
+    # Case 1: If text is provided
+    if text:
+        return {"files": [{"name": "text_input", "text": text}]}
+
+    # Case 2: If a file is provided
+    if file:
+        input_dir = "input"
+        os.makedirs(input_dir, exist_ok=True)
+
+        file_path = os.path.join(input_dir, file.filename)
+        with open(file_path, "wb") as f:
+            f.write(await file.read())
+
+        if file.content_type == "application/pdf":
+            extracted_text = extract_text_from_pdf(file_path)
+        elif file.content_type == "text/plain":
+            extracted_text = extract_text_from_txt(file_path)
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported file type: {file.filename}")
+
+        return {"files": [{"name": file.filename, "text": extracted_text}]}
+
+    raise HTTPException(status_code=400, detail="No file or text provided")
+
+
+
+
+# ------------------- Upload Multiple Files and Summarize (merge option) -------------------
+
+
+@app.post("/api/files/summarize")
+async def upload_and_summarize_files(
+    files: list[UploadFile] = File(...),
+    merge: bool = Form(False)
+):  
+    if not os.path.exists("input"):
+        os.makedirs("input")
+    file_texts = []
+    for file in files:
+        input_path = os.path.join("input", sanitize_filename(file.filename))
+        with open(input_path, "wb") as f:
+            f.write(await file.read())
+
+        if file.content_type == "application/pdf":
+            text = extract_text_from_pdf(input_path)
+        elif file.content_type == "text/plain":
+            text = extract_text_from_txt(input_path)
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported file type: {file.filename}")
+
+        file_texts.append({"name": file.filename, "text": text})
+
+    summaries = []
+
+    if merge:
+        merged_text = "\n".join([f["text"] for f in file_texts])
+        abs_summary, ext_summary, scores = summarize_text(merged_text)
+        save_summary_file("merge_summary", abs_summary, ext_summary, scores)
+        summaries.append({
+            "name": "Merged Files",
+            "abstractive": abs_summary,
+            "extractive": ext_summary,
+            "scores": scores
+        })
+    else:
+        for f in file_texts:
+            abs_summary, ext_summary, scores = summarize_text(f["text"])
+            file_name_prefix = sanitize_filename(f["name"].rsplit(".", 1)[0])
+            save_summary_file(file_name_prefix, abs_summary, ext_summary, scores)
+            summaries.append({
+                "name": f["name"],
+                "abstractive": abs_summary,
+                "extractive": ext_summary,
+                "scores": scores
+            })
+
+    return {"results": summaries}
+
+
+
+# -------------------   Summarization  -------------------
+@app.post("/api/summaries")
+def summarize_with_type(req: TextRequest, file_name: str = None):
+    if file_name:
+        file_path = os.path.join("input", sanitize_filename(file_name))
+        if not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail=f"File {file_name} not found in input/")
+        
+
+        if file_path.endswith(".pdf"):
+            text = extract_text_from_pdf(file_path)
+        elif file_path.endswith(".txt"):
+            text = extract_text_from_txt(file_path)
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported file type: {file_name}")
+    elif req.text:  
+        text = req.text
+    else:
+        raise HTTPException(status_code=400, detail="Either text or file_name is required")
+    
+
+    abs_summary, ext_summary, scores = summarize_text(text)
+    base_name = sanitize_filename(file_name.rsplit(".", 1)[0]) if file_name else "text_input"
+    save_summary_file(base_name, abs_summary, ext_summary, scores)
     return {
         "abstractive": abs_summary,
         "extractive": ext_summary,
-        "scores": scores_clean
+        "scores": scores
     }
 
-# ------------------- Batch Summarization -------------------
-@app.post("/summarize_batch")
-def summarize_batch(request: BatchRequest):
-    summaries = abstractive_summarizer.summarize_batch(request.texts)
-    results = []
-
-    for i, (text, abs_summary) in enumerate(zip(request.texts, summaries)):
-        parser = PlaintextParser.from_string(text, SumyTokenizer("english"))
-        ext_summary_sentences = extractive_summarizer(parser.document, 5)
-        ext_summary = "\n".join([f"- {str(s)}" for s in ext_summary_sentences])
-
-        try:
-            scores = rouge_evaluator.get_scores(abs_summary, ext_summary)[0]
-            scores_clean = {
-                "rouge1": round(scores["rouge-1"]["f"], 3),
-                "rouge2": round(scores["rouge-2"]["f"], 3),
-                "rougeL": round(scores["rouge-l"]["f"], 3),
-            }
-        except:
-            scores_clean = None
-
-        # Save individual summary to output folder
-        file_name_prefix = sanitize_filename(f"File{i+1}")
-        save_summary_file(file_name_prefix, abs_summary, ext_summary, scores_clean)
-
-        results.append({
-            "abstractive": abs_summary,
-            "extractive": ext_summary,
-            "scores": scores_clean
-        })
-
-    return {"results": results}
