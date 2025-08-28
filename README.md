@@ -7,8 +7,8 @@
 
 Input: Large text (e.g., article, research paper)  provided in input folder 1 research paper + sample.txt in /input folder 
 
-#### Make Sure you copy all input files in local storage and delete contents of input and output folder for demonstration the code will produce input as well as output structure
-#### demo output of executed code is found in /output folder in backend
+- #### Make Sure to copy all input files in local storage and delete contents of input and output folder for demonstration the code will produce input as well as output in respective folders
+- #### output of executed code is found in /output folder in backend
 
 Output: Concise summary (3-5 sentences)  
 
