@@ -79,6 +79,16 @@ uvicorn app:app --reload
 - Backend runs at `http://127.0.0.1:8000/`  
 - Access **Swagger UI** at `http://127.0.0.1:8000/docs` for API testing.
 
+
+### 2.6 IF Using Backend Only 
+
+- Go to `http://127.0.0.1:8000/docs`
+- For single file demonstration summary
+   - Path: **/api/files/extract** -> try out -> upload sample.txt and then click execute
+   - for output go to Path: **/api/summaries** and enter file name sample.txt and execute and you will get json output
+- For multi files
+   - Path: **/api/files/summarize** add multiple files and check merge option true or false depending upon if you want merged summary or not then click execute
+
 ---
 
 ## 3. Frontend Setup (React + TailwindCSS)
