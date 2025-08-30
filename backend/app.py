@@ -29,11 +29,13 @@ app.add_middleware(
 )
 
 # ------------------- Models -------------------
-class TextRequest(BaseModel):
-    text: Optional[str] = None 
 
-class BatchRequest(BaseModel):
-    texts: list
+
+class SummaryRequest(BaseModel):
+    file_name: Optional[str] = None,
+    text: Optional[str] = None,  
+    reference: Optional[str] = None
+
 
 # ------------------- Initialize summarizers -------------------
 abstractive_summarizer = Summarizer()
@@ -85,7 +87,7 @@ def save_summary_file(name_prefix, abs_summary, ext_summary, scores=None):
     return path
 
 
-def summarize_text(text):
+def summarize_text(text,reference: Optional[str] = None):
     # Abstractive summary (limit to 5 sentences)
     abs_summary1 = abstractive_summarizer.summarize_text(text)
     abs_sentences = re.split(r'(?<=[.!?])\s+', abs_summary1.strip())
@@ -96,24 +98,28 @@ def summarize_text(text):
     ext_summary_sentences = extractive_summarizer(parser.document, 5)
     ext_summary = "\n".join([f"- {str(s)}" for s in ext_summary_sentences])
 
-    # ROUGE scores against original text
-    try:
-        abs_scores = rouge_evaluator.get_scores(abs_summary, text)[0]
-        ext_scores = rouge_evaluator.get_scores(ext_summary, text)[0]
-        scores_clean = {
-            "abstractive": {
-                "rouge1": round(abs_scores["rouge-1"]["f"], 3),
-                "rouge2": round(abs_scores["rouge-2"]["f"], 3),
-                "rougeL": round(abs_scores["rouge-l"]["f"], 3),
-            },
-            "extractive": {
-                "rouge1": round(ext_scores["rouge-1"]["f"], 3),
-                "rouge2": round(ext_scores["rouge-2"]["f"], 3),
-                "rougeL": round(ext_scores["rouge-l"]["f"], 3),
+    # Calculate ROUGE only if reference is provided
+    if reference and reference.strip():
+        try:
+            abs_scores = rouge_evaluator.get_scores(abs_summary, reference)[0]
+            ext_scores = rouge_evaluator.get_scores(ext_summary, reference)[0]
+            scores_clean = {
+                "abstractive": {
+                    "rouge1": round(abs_scores["rouge-1"]["f"], 3),
+                    "rouge2": round(abs_scores["rouge-2"]["f"], 3),
+                    "rougeL": round(abs_scores["rouge-l"]["f"], 3),
+                },
+                "extractive": {
+                    "rouge1": round(ext_scores["rouge-1"]["f"], 3),
+                    "rouge2": round(ext_scores["rouge-2"]["f"], 3),
+                    "rougeL": round(ext_scores["rouge-l"]["f"], 3),
+                }
             }
-        }
-    except:
+        except:
+            scores_clean = None
+    else:
         scores_clean = None
+
 
     return abs_summary, ext_summary, scores_clean
 
@@ -201,24 +207,22 @@ async def upload_and_summarize_files(
 
     if merge:
         merged_text = "\n".join([f["text"] for f in file_texts])
-        abs_summary, ext_summary, scores = summarize_text(merged_text)
-        save_summary_file("merge_summary", abs_summary, ext_summary, scores)
+        abs_summary, ext_summary, _ = summarize_text(merged_text)
+        save_summary_file("merge_summary", abs_summary, ext_summary)
         summaries.append({
             "name": "Merged Files",
             "abstractive": abs_summary,
-            "extractive": ext_summary,
-            "scores": scores
+            "extractive": ext_summary
         })
     else:
         for f in file_texts:
-            abs_summary, ext_summary, scores = summarize_text(f["text"])
+            abs_summary, ext_summary, _ = summarize_text(f["text"])
             file_name_prefix = sanitize_filename(f["name"].rsplit(".", 1)[0])
-            save_summary_file(file_name_prefix, abs_summary, ext_summary, scores)
+            save_summary_file(file_name_prefix, abs_summary, ext_summary)
             summaries.append({
                 "name": f["name"],
                 "abstractive": abs_summary,
-                "extractive": ext_summary,
-                "scores": scores
+                "extractive": ext_summary
             })
 
     return {"results": summaries}
@@ -227,26 +231,29 @@ async def upload_and_summarize_files(
 
 # -------------------   Summarization  -------------------
 @app.post("/api/summaries")
-def summarize_with_type(req: TextRequest, file_name: str = None):
-    if file_name:
+def summarize_file_with_reference(req: SummaryRequest):
+    file_name = req.file_name
+    text_input = req.text
+    reference = req.reference
+
+    if text_input:  # frontend sent direct text
+        text = text_input
+    elif file_name:
         file_path = os.path.join("input", sanitize_filename(file_name))
         if not os.path.exists(file_path):
             raise HTTPException(status_code=404, detail=f"File {file_name} not found in input/")
         
-
         if file_path.endswith(".pdf"):
             text = extract_text_from_pdf(file_path)
         elif file_path.endswith(".txt"):
             text = extract_text_from_txt(file_path)
         else:
             raise HTTPException(status_code=400, detail=f"Unsupported file type: {file_name}")
-    elif req.text:  
-        text = req.text
     else:
         raise HTTPException(status_code=400, detail="Either text or file_name is required")
     
 
-    abs_summary, ext_summary, scores = summarize_text(text)
+    abs_summary, ext_summary, scores = summarize_text(text, reference=reference)
     base_name = sanitize_filename(file_name.rsplit(".", 1)[0]) if file_name else "text_input"
     save_summary_file(base_name, abs_summary, ext_summary, scores)
     return {

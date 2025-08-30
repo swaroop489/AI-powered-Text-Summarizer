@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState,useRef } from "react";
 
 function SingleFileSummarizer() {
   const [text, setText] = useState("");
@@ -8,6 +8,9 @@ function SingleFileSummarizer() {
   const [scores, setScores] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [refText, setRefText] = useState("");
+  const fileInputRef = useRef(null);
+
 
   // Handle file upload (txt + pdf)
   const handleFileUpload = async (e) => {
@@ -41,7 +44,7 @@ function SingleFileSummarizer() {
     }
   };
 
-  // Summarize text (works for both file-uploaded text or pasted text)
+  // Summarize text
   const handleSummarize = async () => {
     if (!text.trim()) {
       setError("Please enter text or upload a file.");
@@ -55,16 +58,15 @@ function SingleFileSummarizer() {
     setScores(null);
 
     try {
-      const fileNameParam = uploadedFileName ? uploadedFileName : null;
-      const response = await fetch(
-        "http://127.0.0.1:8000/api/summaries" + 
-        (fileNameParam ? `?file_name=${fileNameParam}` : ""),
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text, file_name: fileNameParam }),
-        }
-      );
+      const response = await fetch("http://127.0.0.1:8000/api/summaries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: text,
+          file_name: uploadedFileName || null,
+          reference: refText || null,
+        }),
+      });
 
       if (!response.ok) throw new Error("Failed to summarize text");
 
@@ -79,6 +81,26 @@ function SingleFileSummarizer() {
     }
   };
 
+  // Clear input text
+  const clearText = () => setText("");
+
+  // Clear uploaded file
+  const clearFile = () => {
+    setUploadedFileName(null);
+    setText("");
+    if (fileInputRef.current) fileInputRef.current.value = null;
+  };
+
+  // Clear reference text
+  const clearReference = () => setRefText("");
+
+  // Clear summaries
+  const clearSummaries = () => {
+    setAbstractive("");
+    setExtractive("");
+    setScores(null);
+  };
+
   return (
     <div className="min-h-screen p-1">
       <h1 className="text-3xl font-bold text-center mt-2 mb-8">
@@ -88,26 +110,86 @@ function SingleFileSummarizer() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Left Column: Input */}
         <div className="bg-white p-4 rounded shadow-lg self-start">
-          <h2 className="font-semibold mb-2">Input Text / Upload File</h2>
+          <div className="flex justify-between items-center mb-2">
+            <h2 className="font-semibold">Enter Input Text:</h2>
+            <button
+              onClick={clearText}
+              className="text-red-500 font-semibold hover:underline"
+            >
+              Clear Text
+            </button>
+          </div>
 
           <textarea
-            rows={16}
+            rows={9}
             className="w-full border border-gray-300 p-3 rounded mb-2 resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
             placeholder="Paste your text here..."
             value={text}
             onChange={(e) => setText(e.target.value)}
             disabled={loading}
+            style={{ cursor: loading ? "not-allowed" : "text" }}
           />
 
-          <input type="file" accept=".txt,.pdf" onChange={handleFileUpload} disabled={loading} className="mt-2" />
+          <p className="text-center font-medium">OR</p>
 
-          <button
-            onClick={handleSummarize}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded mt-4 w-full"
-            disabled={loading}
-          >
-            {loading ? "Summarizing..." : "Summarize"}
-          </button>
+          <div className="flex items-center gap-2 mt-1">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".txt,.pdf"
+              onChange={handleFileUpload}
+              disabled={loading}
+              className="flex-1"
+            />
+            {uploadedFileName && (
+              <button
+                onClick={clearFile}
+                className="text-red-500 font-semibold hover:underline"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Optional Reference Text */}
+          <div className="mb-1 mt-4 relative">
+            <label className="block font-semibold mb-2">
+              Optional Reference Text for Rouge Score
+            </label>
+            <textarea
+              rows={4}
+              className="w-full border border-gray-300 p-3 rounded mb-2 resize-none focus:outline-none focus:ring-2 focus:ring-green-400"
+              placeholder="Enter reference text..."
+              value={refText}
+              onChange={(e) => setRefText(e.target.value)}
+              disabled={loading}
+              style={{ cursor: loading ? "not-allowed" : "text" }}
+            />
+            {refText && (
+              <button
+                onClick={clearReference}
+                className="absolute top-8 right-2 text-red-500 font-semibold hover:underline"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={handleSummarize}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded flex-1"
+              disabled={loading}
+            >
+              {loading ? "Summarizing..." : "Summarize"}
+            </button>
+            <button
+              onClick={clearSummaries}
+              className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded flex-1"
+            >
+              Clear Summaries
+            </button>
+          </div>
 
           {error && <p className="text-red-500 mt-2">{error}</p>}
         </div>
@@ -142,7 +224,9 @@ function SingleFileSummarizer() {
 
           {scores && (
             <div className="mt-3">
-              <span className="font-semibold bg-blue-600 text-white p-2">ROUGE Scores</span>
+              <span className="font-semibold bg-blue-600 text-white p-2">
+                ROUGE Scores
+              </span>
               <ul className="list-disc list-inside mt-4">
                 <div className="bg-white p-4 rounded shadow-lg">
                   <li>Abstractive - ROUGE-1: {scores.abstractive.rouge1}</li>
