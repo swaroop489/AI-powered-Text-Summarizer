@@ -141,15 +141,18 @@ async def upload_file_or_text(
     file: Optional[UploadFile] = File(None, description="Upload a single file (PDF/TXT)"),
     text: Optional[str] = Form(None, description="Provide raw text instead of file")
 ):
+    input_dir = "input"
+    os.makedirs(input_dir, exist_ok=True)
+
     # Case 1: If text is provided
     if text:
-        return {"files": [{"name": "text_input", "text": text}]}
+        file_path = os.path.join(input_dir, "text_input.txt")
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(text)
+        return {"files": [{"name": "text_input.txt", "text": text}]}
 
     # Case 2: If a file is provided
     if file:
-        input_dir = "input"
-        os.makedirs(input_dir, exist_ok=True)
-
         file_path = os.path.join(input_dir, file.filename)
         with open(file_path, "wb") as f:
             f.write(await file.read())
@@ -164,6 +167,7 @@ async def upload_file_or_text(
         return {"files": [{"name": file.filename, "text": extracted_text}]}
 
     raise HTTPException(status_code=400, detail="No file or text provided")
+
 
 
 
