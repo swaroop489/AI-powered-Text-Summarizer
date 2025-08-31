@@ -13,6 +13,7 @@ from typing import Optional,List
 
 
 # ------------------- FastAPI setup -------------------
+
 app = FastAPI()
 
 origins = [
@@ -30,19 +31,21 @@ app.add_middleware(
 
 # ------------------- Models -------------------
 
-
 class SummaryRequest(BaseModel):
-    file_name: Optional[str] = None,
-    text: Optional[str] = None,  
+    file_name: Optional[str] = None
+    text: Optional[str] = None  
     reference: Optional[str] = None
 
 
 # ------------------- Initialize summarizers -------------------
+
 abstractive_summarizer = Summarizer()
 extractive_summarizer = LexRankSummarizer()
 rouge_evaluator = Rouge()
 
+
 # ------------------- Helpers -------------------
+
 def extract_text_from_pdf(file_path):
     text = ""
     with pdfplumber.open(file_path) as pdf:
@@ -124,16 +127,11 @@ def summarize_text(text,reference: Optional[str] = None):
     return abs_summary, ext_summary, scores_clean
 
 
-
-
 # ------------------- Routes -------------------
-
-
 
 @app.get("/")
 def root():
     return {"message": "FastAPI backend is running"}
-
 
 
 # ------------------- Upload Files/Text And Extract Text -------------------
@@ -175,11 +173,41 @@ async def upload_file_or_text(
     raise HTTPException(status_code=400, detail="No file or text provided")
 
 
+# -------------------   Summarization  -------------------
 
+@app.post("/api/summaries")
+def summarize_file_with_reference(req: SummaryRequest):
+    file_name = req.file_name
+    text_input = req.text
+    reference = req.reference
+
+    if text_input:  
+        text = text_input
+    elif file_name:
+        file_path = os.path.join("input", sanitize_filename(file_name))
+        if not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail=f"File {file_name} not found in input/")
+        
+        if file_path.endswith(".pdf"):
+            text = extract_text_from_pdf(file_path)
+        elif file_path.endswith(".txt"):
+            text = extract_text_from_txt(file_path)
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported file type: {file_name}")
+    else:
+        raise HTTPException(status_code=400, detail="Either text or file_name is required")
+    
+    abs_summary, ext_summary, scores = summarize_text(text, reference=reference)
+    base_name = sanitize_filename(file_name.rsplit(".", 1)[0]) if file_name else "text_input"
+    save_summary_file(base_name, abs_summary, ext_summary, scores)
+    return {
+        "abstractive": abs_summary,
+        "extractive": ext_summary,
+        "scores": scores
+    }
 
 
 # ------------------- Upload Multiple Files and Summarize (merge option) -------------------
-
 
 @app.post("/api/files/summarize")
 async def upload_and_summarize_files(
@@ -226,39 +254,4 @@ async def upload_and_summarize_files(
             })
 
     return {"results": summaries}
-
-
-
-# -------------------   Summarization  -------------------
-@app.post("/api/summaries")
-def summarize_file_with_reference(req: SummaryRequest):
-    file_name = req.file_name
-    text_input = req.text
-    reference = req.reference
-
-    if text_input:  # frontend sent direct text
-        text = text_input
-    elif file_name:
-        file_path = os.path.join("input", sanitize_filename(file_name))
-        if not os.path.exists(file_path):
-            raise HTTPException(status_code=404, detail=f"File {file_name} not found in input/")
-        
-        if file_path.endswith(".pdf"):
-            text = extract_text_from_pdf(file_path)
-        elif file_path.endswith(".txt"):
-            text = extract_text_from_txt(file_path)
-        else:
-            raise HTTPException(status_code=400, detail=f"Unsupported file type: {file_name}")
-    else:
-        raise HTTPException(status_code=400, detail="Either text or file_name is required")
-    
-
-    abs_summary, ext_summary, scores = summarize_text(text, reference=reference)
-    base_name = sanitize_filename(file_name.rsplit(".", 1)[0]) if file_name else "text_input"
-    save_summary_file(base_name, abs_summary, ext_summary, scores)
-    return {
-        "abstractive": abs_summary,
-        "extractive": ext_summary,
-        "scores": scores
-    }
 
